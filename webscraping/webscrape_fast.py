@@ -30,7 +30,7 @@ def get_regions_urls_req(req):
     return regions_urls
 
 # cities
-def get_cities_urls(region_url, timeout=10.0):
+def get_cities_urls(region_url, timeout=(10.0, 30.0)):
     req = requests.get("https://tcktcktck.org" + region_url + "/locations", timeout=timeout)
     return get_cities_urls_req(req)
 
