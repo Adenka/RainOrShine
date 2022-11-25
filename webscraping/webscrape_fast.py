@@ -4,9 +4,9 @@ from bs4 import BeautifulSoup
 import requests
 
 # countries
-def get_countries_urls():
+def get_countries_urls(timeout=20.0):
     base_url = "https://tcktcktck.org/countries"
-    req = requests.get(base_url)
+    req = requests.get(base_url, timeout=timeout)
     soup = BeautifulSoup(req.text, "html.parser")
     table = soup.find("table", class_="tb1")
 
@@ -16,8 +16,8 @@ def get_countries_urls():
     return countries_urls
 
 # regions
-def get_regions_urls(country_url):
-    req = requests.get(country_url)
+def get_regions_urls(country_url, timeout=10.0):
+    req = requests.get(country_url, timeout=timeout)
     return get_regions_urls_req(req)
 
 def get_regions_urls_req(req):
@@ -30,8 +30,8 @@ def get_regions_urls_req(req):
     return regions_urls
 
 # cities
-def get_cities_urls(region_url):
-    req = requests.get("https://tcktcktck.org" + region_url + "/locations")
+def get_cities_urls(region_url, timeout=10.0):
+    req = requests.get("https://tcktcktck.org" + region_url + "/locations", timeout=timeout)
     return get_cities_urls_req(req)
 
 def get_cities_urls_req(req):
@@ -44,10 +44,10 @@ def get_cities_urls_req(req):
     return cities_urls
 
 # data
-def get_city_data(city_url):
-    req = requests.get(city_url)
+def get_city_data(city_url, timeout=10.0):
+    req = requests.get(city_url, timeout=timeout)
     return get_city_data_req(req)
-    
+
 def get_city_data_req(req):
     soup = BeautifulSoup(req.text, "html.parser")
     header = soup.find("h1", class_="s_t")
