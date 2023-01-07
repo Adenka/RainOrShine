@@ -23,9 +23,9 @@ const App = () => {
                 </Routes>
             </BrowserRouter>
 
-            <Button onClick={buttonOnClick}>
+            {/*<Button onClick={buttonOnClick}>
                 click to query
-            </Button>
+            </Button>*/}
             
         </div>
     )
