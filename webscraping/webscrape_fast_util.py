@@ -8,13 +8,13 @@ def load_cities_urls():
         cities_urls = json.load(f)
     return cities_urls
 
-def get_all_cities_data(cities_data=[], batch=(0, 0), cities_urls=load_cities_urls()):
+def get_all_cities_data(cities_data=[], batch=[0, 0], cities_urls=load_cities_urls()):
     if not cities_data:
         for _ in cities_urls:
             cities_data.append("not_loaded")
 
     if batch[1] == 0:
-        batch[1] = len(cities_data())
+        batch[1] = len(cities_data)
 
     executor = ThreadPoolExecutor()
     futures = [(batch[0] + i, executor.submit(get_city_data, cities_urls[batch[0] + i])) for i, _ in filter(lambda x: isinstance(x[1], str) and x[1] != "<class 'ValueError'>", enumerate(cities_data[batch[0]:batch[1]]))]
