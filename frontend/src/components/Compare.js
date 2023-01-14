@@ -19,15 +19,12 @@ const weatherFeatures = [
 
 const descendingComparator = (a, b, orderBy) => {
     if (b["weather"][orderBy] < a["weather"][orderBy]) {
-        console.log(-1);
         return -1;
     }
     if (b["weather"][orderBy] > a["weather"][orderBy]) {
-        console.log(1);
         return 1;
     }
 
-    console.log(0);
     return 0;
 }
 
