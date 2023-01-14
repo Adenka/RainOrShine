@@ -1,9 +1,41 @@
-//TODO - sortowanie
-
 import React, { useState } from "react";
-import { Checkbox, FormControlLabel, FormGroup, TableContainer, Table, TableCell, TableRow, TableHead, TableBody, IconButton, Autocomplete, TextField, Button } from "@mui/material"
+import {
+    Checkbox, FormControlLabel, FormGroup,
+    TableContainer, Table, TableCell, TableRow, TableHead, TableBody, TableSortLabel,
+    IconButton, Autocomplete, TextField, Button } from "@mui/material"
 import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
 import { useNavigate } from "react-router-dom";
+
+const weatherFeatures = [
+    "Record high",
+    "Average high",
+    "Daily mean",
+    "Average low",
+    "Record low",
+    "Average precipitation",
+    "Average precipitation days",
+    "Mean monthly sunshine hours"
+];
+
+const descendingComparator = (a, b, orderBy) => {
+    if (b["weather"][orderBy] < a["weather"][orderBy]) {
+        console.log(-1);
+        return -1;
+    }
+    if (b["weather"][orderBy] > a["weather"][orderBy]) {
+        console.log(1);
+        return 1;
+    }
+
+    console.log(0);
+    return 0;
+}
+
+const getComparator = (order, orderBy) => {
+    return order === 'desc'
+        ? (a, b) => descendingComparator(a, b, orderBy)
+        : (a, b) => -descendingComparator(a, b, orderBy);
+}
 
 const ShowOnMapButton = () => {
     const navigate = useNavigate();
@@ -19,6 +51,42 @@ const ShowOnMapButton = () => {
     >
         Show on map!
     </Button>
+}
+
+const EnhancedTableHead = (props) => {
+    const { order, orderBy, isShown, handleRequestSort } = props;
+
+    const createSortHandler = (property) => (event) => {
+        handleRequestSort(event, property);
+    };
+
+    return (
+        <TableHead>
+            <TableRow>
+                <TableCell>
+                    Name
+                </TableCell>
+                {weatherFeatures.map(((weatherFeature, id) => (
+                    (isShown[weatherFeature])
+                    ?
+                    <TableCell
+                        key = {id}
+                        sortDirection = {orderBy === weatherFeature ? order : false}
+                    >
+                        <TableSortLabel
+                            active = {orderBy === weatherFeature}
+                            direction = {orderBy === weatherFeature ? order : "asc"}
+                            onClick = {createSortHandler(weatherFeature)}
+                        >
+                            {weatherFeature}
+                        </TableSortLabel>
+                    </TableCell>
+                    :
+                    <></>
+                )))}
+            </TableRow>
+        </TableHead>
+    )
 }
 
 const Compare = () => {
@@ -55,17 +123,6 @@ const Compare = () => {
         setData(prevData => prevData.filter((_, i) => i !== index))
     }
 
-    const weatherFeatures = [
-        "Record high",
-        "Average high",
-        "Daily mean",
-        "Average low",
-        "Record low",
-        "Average precipitation",
-        "Average precipitation days",
-        "Mean monthly sunshine hours"
-    ];
-
     const [isShown, setIsShown] = useState({
         "Record high":  true,
         "Average high": true,
@@ -88,6 +145,7 @@ const Compare = () => {
         //setOptions(newValue ? [newValue, ...options] : options);
         setValue(newValue);
         
+        // TODO - nazwy mogą być te same!
         const isThere = data.some(elem => elem.placeName === newValue)
 
         if (!isThere && newValue) {
@@ -98,14 +156,22 @@ const Compare = () => {
     const [options, setOptions] = useState([
         "alabama", "bahamy", "cypr", "dakota", "eukaliptus", "fiordy", "geordżina", "himalaje", "indonezja"
     ]);
+
     const [value, setValue] = useState(null);
     const [inputValue, setInputValue] = useState('');
+
+    const [order, setOrder] = useState("asc");
+    const [orderBy, setOrderBy] = useState("Record high");
+
+    const handleRequestSort = (event, property) => {
+        const isAsc = orderBy === property && order === 'asc';
+        setOrder(isAsc ? 'desc' : 'asc');
+        setOrderBy(property);
+    };
 
     React.useEffect(() => {
         // query
     }, [value, inputValue])
-
-    console.log(value)
 
     return (
         <div style = {{width: "100%", height: "100%", position: "fixed"}}>
@@ -138,26 +204,18 @@ const Compare = () => {
                 <div style = {{paddingRight: 50}}>
                     <TableContainer style = {{maxHeight: 750}}>
                         <Table stickyHeader style = {{ tableLayout: "fixed" }}>
-                            <TableHead>
-                                <TableRow>
-                                    <TableCell>
-                                        Name
-                                    </TableCell>
-                                    {weatherFeatures.map(weatherFeature => (
-                                        (isShown[weatherFeature])
-                                        ?
-                                        <TableCell>
-                                            {weatherFeature}
-                                        </TableCell>
-                                        :
-                                        <></>
-                                    ))}
-                                </TableRow>
-                            </TableHead>
+                            <EnhancedTableHead
+                                order = {order}
+                                orderBy = {orderBy}
+                                isShown = {isShown}
+                                handleRequestSort = {handleRequestSort}
+                            />
                             <TableBody>
-                                {data.map((entry, index) =>
+                                {data.slice().sort(getComparator(order, orderBy))
+                                .map((entry, index) => {
+                                    return (
                                     <TableRow>
-                                        <TableCell>
+                                        <TableCell> 
                                             <IconButton onClick = {() => handleRemoveClicked(index)}>
                                                 <RemoveCircleIcon/>
                                             </IconButton>
@@ -172,8 +230,8 @@ const Compare = () => {
                                             :
                                             <></>
                                         )}
-                                    </TableRow>    
-                                )}
+                                    </TableRow>)
+                                })}
                             </TableBody>
                         </Table>
                     </TableContainer>
