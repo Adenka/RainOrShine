@@ -5,17 +5,7 @@ import {
     IconButton, Autocomplete, TextField, Button } from "@mui/material"
 import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
 import { useNavigate } from "react-router-dom";
-
-const weatherFeatures = [
-    "Record high",
-    "Average high",
-    "Daily mean",
-    "Average low",
-    "Record low",
-    "Average precipitation",
-    "Average precipitation days",
-    "Mean monthly sunshine hours"
-];
+import {weatherFeatures} from "../assets/weatherFeatures";
 
 const descendingComparator = (a, b, orderBy) => {
     if (b["weather"][orderBy] < a["weather"][orderBy]) {
@@ -211,23 +201,23 @@ const Compare = () => {
                                 {data.slice().sort(getComparator(order, orderBy))
                                 .map((entry, index) => {
                                     return (
-                                    <TableRow>
-                                        <TableCell> 
-                                            <IconButton onClick = {() => handleRemoveClicked(index)}>
-                                                <RemoveCircleIcon/>
-                                            </IconButton>
-                                            {entry.placeName}
-                                        </TableCell>
-                                        {weatherFeatures.map(weatherFeature =>
-                                            (isShown[weatherFeature])
-                                            ?
-                                            <TableCell>
-                                                {entry.weather[weatherFeature]}
+                                        <TableRow>
+                                            <TableCell> 
+                                                <IconButton onClick = {() => handleRemoveClicked(index)}>
+                                                    <RemoveCircleIcon/>
+                                                </IconButton>
+                                                {entry.placeName}
                                             </TableCell>
-                                            :
-                                            <></>
-                                        )}
-                                    </TableRow>)
+                                            {weatherFeatures.map(weatherFeature =>
+                                                (isShown[weatherFeature])
+                                                ?
+                                                <TableCell>
+                                                    {entry.weather[weatherFeature]}
+                                                </TableCell>
+                                                :
+                                                <></>
+                                            )}
+                                        </TableRow>)
                                 })}
                             </TableBody>
                         </Table>
