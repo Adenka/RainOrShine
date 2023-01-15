@@ -1,5 +1,12 @@
 export const weatherFeaturesDefaultValues = [
     {
+        name: "Time span",
+        defaultValue: [6, 9],
+        step: 1,
+        min: 1,
+        max: 12,
+    },
+    {
         name: "Record high",
         defaultValue: [25, 50],
         step: 1,

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { TileLayer, MapContainer, useMap, Marker, Popup } from "react-leaflet"
 import "leaflet/dist/leaflet.css"
 import { Paper, Autocomplete, TextField, Button, Collapse, Slider, Typography, IconButton, FormControlLabel, Checkbox } from "@mui/material";
@@ -8,6 +8,8 @@ import { weatherFeaturesDefaultValues } from "../assets/weatherFeaturesDefaultVa
 import { weatherFeatures } from "../assets/weatherFeatures";
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import ArrowDropUpIcon from '@mui/icons-material/ArrowDropUp';
+import { exampleData } from "../assets/exampleData";
+import { PlacesContext } from "./PlacesContext";
 
 delete L.Icon.Default.prototype._getIconUrl;
 
@@ -17,16 +19,24 @@ L.Icon.Default.mergeOptions({
     shadowUrl: require('leaflet/dist/images/marker-shadow.png')
 });
 
-const CompareButton = () => {
+const CompareButton = ({markers}) => {
+    const {setPlaces} = useContext(PlacesContext);
     const navigate = useNavigate();
+
+    const handleOnClick = () => {
+        setPlaces(markers.map((marker) => (marker["id"])));
+        navigate("/compare");
+    }
 
     return <Button
         variant = "contained"
-        onClick = {() => navigate("/compare")}
+        onClick = {handleOnClick}
         sx = {{
             position: "fixed",
             right: 20,
             bottom: 30,
+            fontSize: 16,
+            padding: 2,
             zIndex: 1000
         }}
     >
@@ -42,15 +52,37 @@ const ChangeView = ({center, zoom}) => {
 }
 
 const Search = () => {
-    const [center, setCenter] = useState({ lat: 53, lng: 19 })
-    const zoom = 9;
+    const data = exampleData;
+    const navigate = useNavigate();
+    const { places, setPlaces } = useContext(PlacesContext);
+    const [ markers, setMarkers ] = useState([]);
+    const [ center, setCenter ] = useState({ lat: 53, lng: 19 })
+    const [ zoom, setZoom ] = useState(9);
+    
+    useEffect(() => {
+        console.log(data, places)
+        const beginPlaces
+            = places.map((placeId => (data.find(dataPlace => dataPlace["placeId"] === placeId))));
+        console.log(beginPlaces)
+
+        setMarkers(beginPlaces.map(place => ({
+            id: place["placeId"],
+            position: [place["latitude"], place["longitude"]]
+        })))
+
+        const sumLatitude = beginPlaces.reduce((acc, obj) => acc + obj.latitude, 0);
+        const sumLongitude = beginPlaces.reduce((acc, obj) => acc + obj.longitude, 0);
+        const howMany = beginPlaces.length;
+
+        if (howMany > 0) {
+            setCenter({lat: sumLatitude / howMany, lng: sumLongitude / howMany});
+        }
+    }, [])
 
     const [autocompleteValue, setAutocompleteValue] = useState(null);
     const [distanceValue, setDistanceValue] = useState(50);
     const [inputValue, setInputValue] = useState('');
     const [weatherFeaturesShown, setWeatherFeaturesShown] = useState(false);
-
-    const [markers, setMarkers] = useState([]);
 
     const handleAutocompleteValueChange = (event, newValue) => {
         if (!newValue) {
@@ -83,27 +115,6 @@ const Search = () => {
             prevMarkers.filter((m, _) => m["id"] !== marker["id"]))
     }
 
-    const data = [
-        {
-            placeId: 2137,
-            placeName: "Toruń",
-            latitude: 53,
-            longitude: 18.6
-        },
-        {
-            placeId: 69,
-            placeName: "Poznań",
-            latitude: 52.4,
-            longitude: 16.93
-        },
-        {
-            placeId: 420,
-            placeName: "Bydgoszcz",
-            latitude: 53.12,
-            longitude: 18
-        }
-    ]
-
     const [options, setOptions] = useState(
         data.map(place => ({placeId: place["placeId"], placeName: place["placeName"]}))
     );
@@ -126,9 +137,19 @@ const Search = () => {
         }))
     }
 
+    const handleClickedMarker = (marker) => {
+        const obj = data.find(elem => elem.placeId === marker["id"]);
+        
+        const latitude = obj["latitude"];
+        const longitude = obj["longitude"];
+
+        setCenter({lat: latitude, lng: longitude});
+        setAutocompleteValue(obj["placeName"]);
+    }
+
     return (
         <div style = {{height: "100%", width: "100%", position: "fixed"}}>
-            <CompareButton/>
+            <CompareButton markers = {markers}/>
             <div style = {{
                 position: "fixed", left: 72, top: 16, zIndex: 700
             }}>
@@ -195,6 +216,11 @@ const Search = () => {
                             ))}
                         </div>
                     </Collapse>
+                    <div style = {{width: "100%", display: "flex", justifyContent: "right", marginTop: 20}}>
+                        <Button>
+                            Search!
+                        </Button>
+                    </div>
                 </Paper>
             </div>
             <MapContainer
@@ -208,10 +234,15 @@ const Search = () => {
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
                 {markers.map(marker => (
-                    <Marker position={marker["position"]}>
+                    <Marker position = {marker["position"]} eventHandlers={{
+                        click: (e) => handleClickedMarker(marker),
+                      }}>
                         <Popup>
                             <div style = {{display: "flex", flexDirection: "column"}}>
-                            <Button variant = "contained">
+                            <Button
+                                variant = "contained"
+                                onClick={() => {setPlaces([marker.id]); navigate("/compare")}}
+                            >
                                 Show details
                             </Button>
                             <Button onClick={() => deleteFromMarkers(marker)}>

@@ -1,11 +1,14 @@
-import React, { useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import {
     Checkbox, FormControlLabel, FormGroup,
     TableContainer, Table, TableCell, TableRow, TableHead, TableBody, TableSortLabel,
-    IconButton, Autocomplete, TextField, Button } from "@mui/material"
+    IconButton, Autocomplete, TextField, Button, setRef, Drawer, Paper, Slider, Typography, Grid } from "@mui/material"
 import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
 import { useNavigate } from "react-router-dom";
-import {weatherFeatures} from "../assets/weatherFeatures";
+import { weatherFeatures } from "../assets/weatherFeatures";
+import { PlacesContext } from "./PlacesContext";
+import { exampleData } from "../assets/exampleData";
+import TuneIcon from '@mui/icons-material/Tune';
 
 const descendingComparator = (a, b, orderBy) => {
     if (b["weather"][orderBy] < a["weather"][orderBy]) {
@@ -24,16 +27,24 @@ const getComparator = (order, orderBy) => {
         : (a, b) => -descendingComparator(a, b, orderBy);
 }
 
-const ShowOnMapButton = () => {
+const ShowOnMapButton = ({newPlaces}) => {
+    const { setPlaces } = useContext(PlacesContext);
     const navigate = useNavigate();
+
+    const handleOnClick = () => {
+        setPlaces(newPlaces.map((newPlace) => (newPlace["placeId"])));
+        navigate("/search");
+    }
 
     return <Button
         variant = "contained"
-        onClick = {() => navigate("/search")}
+        onClick = {handleOnClick}
         sx = {{
             position: "fixed",
             right: 60,
             bottom: 60,
+            fontSize: 16,
+            padding: 2
         }}
     >
         Show on map!
@@ -50,7 +61,7 @@ const EnhancedTableHead = (props) => {
     return (
         <TableHead>
             <TableRow>
-                <TableCell>
+                <TableCell sx = {{fontSize: 18}}>
                     Name
                 </TableCell>
                 {weatherFeatures.map(((weatherFeature, id) => (
@@ -59,6 +70,7 @@ const EnhancedTableHead = (props) => {
                     <TableCell
                         key = {id}
                         sortDirection = {orderBy === weatherFeature ? order : false}
+                        sx = {{fontSize: 18}}
                     >
                         <TableSortLabel
                             active = {orderBy === weatherFeature}
@@ -77,34 +89,16 @@ const EnhancedTableHead = (props) => {
 }
 
 const Compare = () => {
-    const generateWeather = () => {
-        return {
-            "Record high": Math.floor(Math.random() * 10000) / 100,
-            "Average high": Math.floor(Math.random() * 10000) / 100,
-            "Daily mean": Math.floor(Math.random() * 10000) / 100,
-            "Average low": Math.floor(Math.random() * 10000) / 100,
-            "Record low": Math.floor(Math.random() * 10000) / 100,
+    const {places} = useContext(PlacesContext)
+    const [data, setData] = useState([]);
 
-            "Average precipitation":        Math.floor(Math.random() * 10000) / 100,
-            "Average precipitation days":   Math.floor(Math.random() * 3000) / 100,
-            "Mean monthly sunshine hours":  Math.floor(Math.random() * 2400) / 100
-        }
-    }
-
-    const [data, setData] = useState([
-        {
-            placeName: "wadowice",
-            weather: generateWeather()
-        },
-        {
-            placeName: "vegas baby",
-            weather: generateWeather()
-        },
-        {
-            placeName: "mars",
-            weather: generateWeather()
-        },
-    ]);
+    useEffect(() => {
+        console.log(places)
+        const beginPlaces
+            = places.map((placeId => (exampleData.find(dataPlace => dataPlace["placeId"] === placeId))));
+        console.log(beginPlaces);
+        setData(beginPlaces)
+    }, [])
 
     const handleRemoveClicked = (index) => {
         setData(prevData => prevData.filter((_, i) => i !== index))
@@ -129,20 +123,29 @@ const Compare = () => {
     }
 
     const handleValueChange = (event, newValue) => {
-        //setOptions(newValue ? [newValue, ...options] : options);
-        setValue(newValue);
-        
-        // TODO - nazwy mogą być te same!
-        const isThere = data.some(elem => elem.placeName === newValue)
+        if (!newValue) {
+            setValue(newValue);
+            return;
+        }
 
-        if (!isThere && newValue) {
-            setData(prevData => [...prevData, {placeName: newValue, weather: generateWeather()}])
+        setValue(newValue["label"]);
+        
+        const isThere = data.some(elem => elem.placeId === newValue["id"]);
+        
+        if (!isThere) {
+            const actualData = exampleData.find(elem => elem.placeId === newValue["id"]);
+            setData(prevData => [
+                ...prevData,
+                {
+                    placeId: actualData["placeId"],
+                    placeName: actualData["placeName"],
+                    weather: actualData["weather"]
+                }
+            ])
         }
     }
 
-    const [options, setOptions] = useState([
-        "alabama", "bahamy", "cypr", "dakota", "eukaliptus", "fiordy", "geordżina", "himalaje", "indonezja"
-    ]);
+    const [options, setOptions] = useState(exampleData);
 
     const [value, setValue] = useState(null);
     const [inputValue, setInputValue] = useState('');
@@ -156,17 +159,21 @@ const Compare = () => {
         setOrderBy(property);
     };
 
+    const [drawerOpen, setDrawerOpen] = useState(false)
+
     React.useEffect(() => {
         // query
     }, [value, inputValue])
 
     return (
         <div style = {{width: "100%", height: "100%", position: "fixed"}}>
-            <ShowOnMapButton/>
-            <div style = {{padding: 50}}>
+            <ShowOnMapButton newPlaces={data}/>
+            <Paper style = {{padding: 40, display: "flex", margin: 10, marginRight: 20}}>
                 <Autocomplete
-                    renderInput={(params) => (<TextField {...params} label = "Add a location"/>)}
-                    options = {options}
+                    renderInput = {(params) => (<TextField {...params} label = "Add a location"/>)}
+                    options = {options.map(
+                        option => ({id: option["placeId"], label: option["placeName"]})
+                    )}
                     value = {value}
                     onChange = {(event, newValue) => handleValueChange(event, newValue)}
                     onInputChange = {(event, newInputValue) => {
@@ -174,21 +181,91 @@ const Compare = () => {
                     }}
                     fullWidth
                 />
-            </div>
+                <IconButton
+                    style ={{ marginLeft: 40, width: 60, height: 60 }}
+                    onClick = {() => setDrawerOpen(true)}
+                >
+                    <TuneIcon/>
+                </IconButton>
+            </Paper>
             <div style = {{display: "flex", justifyItems: "center"}}>
-                <div style = {{minWidth: 300, paddingLeft: 50}}>
-                    <FormGroup>
-                        {weatherFeatures.map(weatherFeature =>
-                            <FormControlLabel control={
-                                <Checkbox
-                                    checked = {isShown[weatherFeature]}
-                                    onChange={() => handleCheckClicked(weatherFeature)}
+                <Drawer
+                    anchor = "bottom"
+                    open = {drawerOpen}
+                    onClose = {() => setDrawerOpen(false)}
+                >
+                    <div style = {{paddingLeft: 50, width: "calc(100vw - 100px)", marginBottom: 50}}>
+                        <Typography
+                            variant = "h4"
+                            sx = {{
+                                width: "100%",
+                                display: "flex",
+                                justifyContent: "center",
+                                paddingTop: 6,
+                                paddingBottom: 6,
+                            }}
+                        >
+                            Adjust
+                        </Typography>
+                        <div style = {{display: "flex"}}>
+                            <div style = {{width: "20%", display: "flex", flexDirection: "column", alignItems: "center"}}>
+                                <Typography sx = {{fontSize: 20, padding: "20px"}}>Time span</Typography>
+                                <Slider
+                                    defaultValue = "Time span"
+                                    valueLabelDisplay = "auto"
+                                    marks
+                                    step = {1}
+                                    min = {1}
+                                    max = {12}
+                                    sx = {{width: 200}}
                                 />
-                            } label = {weatherFeature}/>
-                        )}
-                    </FormGroup>
-                </div>
-                <div style = {{paddingRight: 50}}>
+                            </div>
+                            <div style = {{width: "100%", marginLeft: 100}}>
+                                <Grid container spacing = {2}>
+                                    {weatherFeatures.filter(((_, index) => index < 5))
+                                                    .map(weatherFeature =>
+                                        <Grid item xs = {2.4}>
+                                            <FormControlLabel
+                                                control={
+                                                    <Checkbox
+                                                        checked = {isShown[weatherFeature]}
+                                                        onChange={() => handleCheckClicked(weatherFeature)}
+                                                    />
+                                                }
+                                                label = {
+                                                    <Typography style = {{fontSize: 20, padding: 20}}>
+                                                        {weatherFeature}
+                                                    </Typography>
+                                                }
+                                            />
+                                        </Grid>
+                                    )}
+                                <Grid container spacing = {2}>
+                                </Grid>
+                                    {weatherFeatures.filter(((_, index) => index >= 5))
+                                                    .map(weatherFeature =>
+                                        <Grid item xs = {2.4}>
+                                            <FormControlLabel
+                                                control={
+                                                    <Checkbox
+                                                        checked = {isShown[weatherFeature]}
+                                                        onChange={() => handleCheckClicked(weatherFeature)}
+                                                    />
+                                                }
+                                                label = {
+                                                    <Typography style = {{fontSize: 20, padding: 20}}>
+                                                        {weatherFeature}
+                                                    </Typography>
+                                                }
+                                            />
+                                        </Grid>
+                                    )}
+                                </Grid>
+                            </div>
+                        </div>
+                    </div>
+                </Drawer>
+                <Paper style = {{padding: 50, margin: 10, marginRight: 20, height: "calc(100vh - 295px)"}}>
                     <TableContainer style = {{maxHeight: 750}}>
                         <Table stickyHeader style = {{ tableLayout: "fixed" }}>
                             <EnhancedTableHead
@@ -202,7 +279,7 @@ const Compare = () => {
                                 .map((entry, index) => {
                                     return (
                                         <TableRow>
-                                            <TableCell> 
+                                            <TableCell sx = {{fontSize: 16}}> 
                                                 <IconButton onClick = {() => handleRemoveClicked(index)}>
                                                     <RemoveCircleIcon/>
                                                 </IconButton>
@@ -211,18 +288,19 @@ const Compare = () => {
                                             {weatherFeatures.map(weatherFeature =>
                                                 (isShown[weatherFeature])
                                                 ?
-                                                <TableCell>
+                                                <TableCell sx = {{fontSize: 16}}>
                                                     {entry.weather[weatherFeature]}
                                                 </TableCell>
                                                 :
                                                 <></>
                                             )}
-                                        </TableRow>)
+                                        </TableRow>
+                                    )
                                 })}
                             </TableBody>
                         </Table>
                     </TableContainer>
-                </div>
+                </Paper>
             </div>
         </div>
     );
