@@ -11,8 +11,15 @@ const App = () => {
     const [places, setPlaces] = useState([]);
 
     const buttonOnClick = async () => {
-        const data = await fetchApi("cityId", {id: 5})
-        console.log(data)
+        const data = await fetchApi(
+            "searchForWeather",
+            {
+                ids: [1, 2],
+                left: 0,
+                right: 11
+            }
+        )
+        console.log(data.rows)
     }
 
     return (
@@ -25,12 +32,13 @@ const App = () => {
                         <Route path = "/search" element = {<Search/>} />
                     </Routes>
                 </BrowserRouter>
+                <Button onClick={buttonOnClick}>
+                    click to query
+                </Button>
             </PlacesContext.Provider>            
         </div>
     )
 }
 
-            /*<Button onClick={buttonOnClick}>
-                click to query
-            </Button>*/
+            /**/
 export default App

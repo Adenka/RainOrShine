@@ -24,7 +24,7 @@ const fetchApi = async (endpoint, args) => {
             endpoint,
             args
         }),
-    }).catch(throwError(683, 'Network Error')) //ustandaryzowac bledy!!!
+    }).catch(throwError(683, 'Network Error'))
 
     const data = await res.json().catch(throwError(547, 'JSON Error'))
 
