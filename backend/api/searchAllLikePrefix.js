@@ -11,5 +11,7 @@ module.exports = async ({ prefix }) => {
         { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
 
-    return result
+    await connection.close()
+
+    return result.rows
 }

@@ -10,6 +10,8 @@ module.exports = async ({ prefix }) => {
         [xd],
         { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
+    
+    await connection.close()
 
-    return result
+    return result.rows
 }

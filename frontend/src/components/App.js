@@ -9,7 +9,7 @@ import { PlacesContext } from "./PlacesContext"
 
 const App = () => {
     const [places, setPlaces] = useState([]);
-
+    const [timeSpan, setTimeSpan] = useState([0, 11]);
     const buttonOnClick = async () => {
         const data = await fetchApi(
             "searchForWeather",
@@ -19,12 +19,12 @@ const App = () => {
                 right: 11
             }
         )
-        console.log(data.rows)
+        console.log(data)
     }
 
     return (
         <div>
-            <PlacesContext.Provider value = {{places, setPlaces}}>
+            <PlacesContext.Provider value = {{places, setPlaces, timeSpan, setTimeSpan}}>
                 <BrowserRouter>
                     <Routes>
                         <Route path = "/" element = {<Gamemode/>} />

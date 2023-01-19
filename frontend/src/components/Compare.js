@@ -1,14 +1,35 @@
 import React, { useContext, useEffect, useState } from "react";
 import {
-    Checkbox, FormControlLabel, FormGroup,
+    Checkbox, FormControlLabel,
     TableContainer, Table, TableCell, TableRow, TableHead, TableBody, TableSortLabel,
-    IconButton, Autocomplete, TextField, Button, setRef, Drawer, Paper, Slider, Typography, Grid } from "@mui/material"
+    IconButton, Autocomplete, TextField, Button, Drawer, Paper, Slider, Typography, Grid } from "@mui/material"
 import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
 import { useNavigate } from "react-router-dom";
 import { weatherFeatures } from "../assets/weatherFeatures";
 import { PlacesContext } from "./PlacesContext";
 import { exampleData } from "../assets/exampleData";
 import TuneIcon from '@mui/icons-material/Tune';
+import { fetchApi } from "../utils/apiMiddleware"
+
+const calculateOneFeature = (weatherData, weatherFeatureName) => {
+    console.log(weatherData[0][weatherFeatureName])
+    return Math.floor(weatherData.reduce((sum, record) => sum + record[weatherFeatureName], 0) * 100 / weatherData.length) / 100
+}
+
+const calculateWeather = (weatherData) => {
+    const weather = {};
+    weather["Record high"] = calculateOneFeature(weatherData, "TEMP_MAX");
+    weather["Average high"] = calculateOneFeature(weatherData, "TEMP_AVG_MAX");
+    weather["Daily mean"] = calculateOneFeature(weatherData, "TEMP_AVG");
+    weather["Average low"] = calculateOneFeature(weatherData, "TEMP_AVG_MIN");
+    weather["Record low"] = calculateOneFeature(weatherData, "TEMP_MIN");
+    weather["Average precipitation"] = calculateOneFeature(weatherData, "RAIN_AVG");
+    weather["Average precipitation days"] = calculateOneFeature(weatherData, "RAIN_DAYS_AVG");
+    weather["Mean monthly sunshine hours"] = calculateOneFeature(weatherData, "SUN_HOURS_AVG");
+
+    console.log(weather);
+    return weather;
+}
 
 const descendingComparator = (a, b, orderBy) => {
     if (b["weather"][orderBy] < a["weather"][orderBy]) {
@@ -32,8 +53,10 @@ const ShowOnMapButton = ({newPlaces}) => {
     const navigate = useNavigate();
 
     const handleOnClick = () => {
-        setPlaces(newPlaces.map((newPlace) => (newPlace["placeId"])));
-        navigate("/search");
+        const xd = newPlaces.map((newPlace) => (newPlace["placeId"]));
+        console.log(xd);
+        setPlaces(xd);
+        //navigate("/search");
     }
 
     return <Button
@@ -89,15 +112,33 @@ const EnhancedTableHead = (props) => {
 }
 
 const Compare = () => {
-    const {places} = useContext(PlacesContext)
+    const {places, timeSpan, setTimeSpan} = useContext(PlacesContext)
     const [data, setData] = useState([]);
+
+    const getStartingWeather = async () => {
+        console.log("lol");
+        const startingWeather = await fetchApi(
+            "searchForWeather",
+            {
+                ids: places,
+                left: timeSpan[0],
+                right: timeSpan[1]
+            }
+        )
+        console.log(startingWeather)
+        return startingWeather
+    }
+
+    const fetchStartingWeather = async () => {
+        const beginPlaces = await getStartingWeather();
+        console.log(beginPlaces);
+        setData(beginPlaces)
+    }
 
     useEffect(() => {
         console.log(places)
-        const beginPlaces
-            = places.map((placeId => (exampleData.find(dataPlace => dataPlace["placeId"] === placeId))));
-        console.log(beginPlaces);
-        setData(beginPlaces)
+        
+        fetchStartingWeather()
     }, [])
 
     const handleRemoveClicked = (index) => {
@@ -122,18 +163,40 @@ const Compare = () => {
         }))
     }
 
-    const handleValueChange = (event, newValue) => {
+    const getRow = async (id, left, right) => {
+        console.log(id, left, right);
+        const newRow = await fetchApi(
+            "searchIdPeriod",
+            {
+                id: id,
+                left: left,
+                right: right
+            }
+        )
+        
+        console.log(newRow)
+        return {
+            placeId: newRow[0]["ID_PLACE"],
+            placeName: newRow[0]["PLACE_NAME"],
+            weather: calculateWeather(newRow)
+        }
+    }
+
+    const handleValueChange = async     (event, newValue) => {
         if (!newValue) {
             setValue(newValue);
             return;
         }
-
+        
+        console.log(newValue);
         setValue(newValue["label"]);
         
         const isThere = data.some(elem => elem.placeId === newValue["id"]);
         
         if (!isThere) {
-            const actualData = exampleData.find(elem => elem.placeId === newValue["id"]);
+            console.log(newValue["id"])
+            const actualData = await getRow(newValue["id"], timeSpan[0], timeSpan[1])
+            console.log(actualData)
             setData(prevData => [
                 ...prevData,
                 {
@@ -145,7 +208,7 @@ const Compare = () => {
         }
     }
 
-    const [options, setOptions] = useState(exampleData);
+    const [options, setOptions] = useState([]);
 
     const [value, setValue] = useState(null);
     const [inputValue, setInputValue] = useState('');
@@ -161,8 +224,19 @@ const Compare = () => {
 
     const [drawerOpen, setDrawerOpen] = useState(false)
 
+    const getOptions = async () => {
+        const prefix = inputValue;
+        const newOptions = await fetchApi(
+            "searchAllCitiesLikePrefix",
+            {
+                prefix: prefix
+            }
+        )
+        setOptions(newOptions)
+    }
+
     React.useEffect(() => {
-        // query
+        getOptions()
     }, [value, inputValue])
 
     return (
@@ -172,7 +246,7 @@ const Compare = () => {
                 <Autocomplete
                     renderInput = {(params) => (<TextField {...params} label = "Add a location"/>)}
                     options = {options.map(
-                        option => ({id: option["placeId"], label: option["placeName"]})
+                        option => ({id: option["ID_PLACE"], label: option["PLACE_NAME"]})
                     )}
                     value = {value}
                     onChange = {(event, newValue) => handleValueChange(event, newValue)}
@@ -211,13 +285,16 @@ const Compare = () => {
                             <div style = {{width: "20%", display: "flex", flexDirection: "column", alignItems: "center"}}>
                                 <Typography sx = {{fontSize: 20, padding: "20px"}}>Time span</Typography>
                                 <Slider
-                                    defaultValue = "Time span"
+                                    defaultValue = {[timeSpan[0] + 1, timeSpan[1] + 1]}
                                     valueLabelDisplay = "auto"
                                     marks
                                     step = {1}
                                     min = {1}
                                     max = {12}
                                     sx = {{width: 200}}
+                                    onChangeCommitted = {
+                                        (_, newValue) => setTimeSpan([newValue[0] - 1, newValue[1] - 1])
+                                    }
                                 />
                             </div>
                             <div style = {{width: "100%", marginLeft: 100}}>
