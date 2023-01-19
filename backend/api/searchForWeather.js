@@ -2,13 +2,13 @@ const oracledb = require('oracledb')
 const { throwError, throwIf } = require('../utils/throwFunctions')
 
 module.exports = async ({ ids, left, right }) => {
-    if (ids.length == 0) {
+    if (ids.length === 0) {
         return [];
     }
     console.log("xd");
     const connection = await oracledb.getConnection();
     console.log("xdd");
-    let sql = `SELECT place.id_place, place.place_name
+    let sql = `SELECT place.id_place, place.place_name, weather.*
                 FROM place JOIN weather ON place.id_place = weather.id_place
                 WHERE id_period BETWEEN :0 AND :1
                 AND place.id_place

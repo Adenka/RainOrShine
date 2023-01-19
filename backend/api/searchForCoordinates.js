@@ -2,6 +2,9 @@ const oracledb = require('oracledb')
 const { throwError, throwIf } = require('../utils/throwFunctions')
 
 module.exports = async ({ ids }) => {
+    if (ids.length === 0) {
+        return [];
+    }
     const connection = await oracledb.getConnection();
     
     let sql = `SELECT place.id_place, place.place_name, city.latitude, city.longitude

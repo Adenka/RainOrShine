@@ -10,6 +10,7 @@ import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import ArrowDropUpIcon from '@mui/icons-material/ArrowDropUp';
 import { exampleData } from "../assets/exampleData";
 import { PlacesContext } from "./PlacesContext";
+import { fetchApi } from "../utils/apiMiddleware";
 
 delete L.Icon.Default.prototype._getIconUrl;
 
@@ -52,31 +53,46 @@ const ChangeView = ({center, zoom}) => {
 }
 
 const Search = () => {
-    const data = exampleData;
     const navigate = useNavigate();
     const { places, setPlaces } = useContext(PlacesContext);
     const [ markers, setMarkers ] = useState([]);
     const [ center, setCenter ] = useState({ lat: 53, lng: 19 })
     const [ zoom, setZoom ] = useState(9);
-    
-    useEffect(() => {
-        console.log(data, places)
-        const beginPlaces
-            = places.map((placeId => (data.find(dataPlace => dataPlace["placeId"] === placeId))));
-        console.log(beginPlaces)
 
-        setMarkers(beginPlaces.map(place => ({
-            id: place["placeId"],
-            position: [place["latitude"], place["longitude"]]
+    const getStartingCoordinates = async () => {
+        const startingCoordinates = await fetchApi(
+            "searchForCoordinates",
+            {
+                ids: places
+            }
+        )
+        console.log(startingCoordinates)
+        return startingCoordinates
+    }
+
+    const fetchStartingCoordinates = async () => {
+        const startingCoordinates = await getStartingCoordinates();
+
+        console.log(startingCoordinates)
+
+        setMarkers(startingCoordinates.map(place => ({
+            id: place["ID_PLACE"],
+            position: [place["LATITUDE"], place["LONGITUDE"]]
         })))
 
-        const sumLatitude = beginPlaces.reduce((acc, obj) => acc + obj.latitude, 0);
-        const sumLongitude = beginPlaces.reduce((acc, obj) => acc + obj.longitude, 0);
-        const howMany = beginPlaces.length;
+        const sumLatitude = startingCoordinates.reduce((acc, obj) => acc + obj["LATITUDE"], 0);
+        const sumLongitude = startingCoordinates.reduce((acc, obj) => acc + obj["LONGITUDE"], 0);
+        const howMany = startingCoordinates.length;
 
         if (howMany > 0) {
             setCenter({lat: sumLatitude / howMany, lng: sumLongitude / howMany});
         }
+    }
+    
+    useEffect(() => {
+        console.log(places);
+        
+        fetchStartingCoordinates();
     }, [])
 
     const [autocompleteValue, setAutocompleteValue] = useState(null);
@@ -84,14 +100,34 @@ const Search = () => {
     const [inputValue, setInputValue] = useState('');
     const [weatherFeaturesShown, setWeatherFeaturesShown] = useState(false);
 
-    const handleAutocompleteValueChange = (event, newValue) => {
+    const getLocalization = async (id) => {
+        console.log(id);
+        const newRow = await fetchApi(
+            "searchForCoordinates",
+            {
+                ids: [id],
+            }
+        )
+        
+        console.log(newRow)
+        return {
+            placeId: newRow[0]["ID_PLACE"],
+            placeName: newRow[0]["PLACE_NAME"],
+            latitude: newRow[0]["LATITUDE"],
+            longitude: newRow[0]["LONGITUDE"],
+        }
+    }
+
+    const handleAutocompleteValueChange = async (event, newValue) => {
         if (!newValue) {
+            setAutocompleteValue(newValue);
             return;
         }
 
         setAutocompleteValue(newValue["label"]);
         
-        const obj = data.find(elem => elem.placeId === newValue["id"]);
+        const obj = await getLocalization(newValue["id"]);
+        console.log(obj);
         const latitude = obj["latitude"];
         const longitude = obj["longitude"];
         
@@ -115,9 +151,7 @@ const Search = () => {
             prevMarkers.filter((m, _) => m["id"] !== marker["id"]))
     }
 
-    const [options, setOptions] = useState(
-        data.map(place => ({placeId: place["placeId"], placeName: place["placeName"]}))
-    );
+    const [options, setOptions] = useState([]);
 
     const [isDisabled, setIsDisabled] = useState({
         "Record high":  false,
@@ -137,15 +171,31 @@ const Search = () => {
         }))
     }
 
-    const handleClickedMarker = (marker) => {
-        const obj = data.find(elem => elem.placeId === marker["id"]);
-        
+    const handleClickedMarker = async (marker) => {
+        const obj = await getLocalization(marker["id"]);
+        console.log(obj)
         const latitude = obj["latitude"];
         const longitude = obj["longitude"];
 
         setCenter({lat: latitude, lng: longitude});
         setAutocompleteValue(obj["placeName"]);
     }
+
+    const getOptions = async () => {
+        const prefix = inputValue;
+        const newOptions = await fetchApi(
+            "searchAllCitiesLikePrefix",
+            {
+                prefix: prefix
+            }
+        )
+        setOptions(newOptions)
+    }
+
+    React.useEffect(() => {
+        getOptions()
+    }, [autocompleteValue, inputValue])
+
 
     return (
         <div style = {{height: "100%", width: "100%", position: "fixed"}}>
@@ -157,7 +207,7 @@ const Search = () => {
                     <Autocomplete
                         renderInput={(params) => (<TextField {...params} label = "Add a location"/>)}
                         options = {options.map(
-                            option => ({id: option["placeId"], label: option["placeName"]})
+                            option => ({id: option["ID_PLACE"], label: option["PLACE_NAME"]})
                         )}
                         value = {autocompleteValue}
                         onChange = {(event, newValue) => handleAutocompleteValueChange(event, newValue)}

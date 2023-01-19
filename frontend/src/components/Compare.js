@@ -7,27 +7,37 @@ import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
 import { useNavigate } from "react-router-dom";
 import { weatherFeatures } from "../assets/weatherFeatures";
 import { PlacesContext } from "./PlacesContext";
-import { exampleData } from "../assets/exampleData";
 import TuneIcon from '@mui/icons-material/Tune';
 import { fetchApi } from "../utils/apiMiddleware"
 
-const calculateOneFeature = (weatherData, weatherFeatureName) => {
-    console.log(weatherData[0][weatherFeatureName])
-    return Math.floor(weatherData.reduce((sum, record) => sum + record[weatherFeatureName], 0) * 100 / weatherData.length) / 100
+const calculateOneFeature = (weatherData, weatherFeatureName, id) => {
+    return Math.floor(weatherData.reduce((sum, record) => record["ID_PLACE"] === id ? sum + record[weatherFeatureName] : sum, 0) * 100 / weatherData.length) / 100
 }
 
-const calculateWeather = (weatherData) => {
-    const weather = {};
-    weather["Record high"] = calculateOneFeature(weatherData, "TEMP_MAX");
-    weather["Average high"] = calculateOneFeature(weatherData, "TEMP_AVG_MAX");
-    weather["Daily mean"] = calculateOneFeature(weatherData, "TEMP_AVG");
-    weather["Average low"] = calculateOneFeature(weatherData, "TEMP_AVG_MIN");
-    weather["Record low"] = calculateOneFeature(weatherData, "TEMP_MIN");
-    weather["Average precipitation"] = calculateOneFeature(weatherData, "RAIN_AVG");
-    weather["Average precipitation days"] = calculateOneFeature(weatherData, "RAIN_DAYS_AVG");
-    weather["Mean monthly sunshine hours"] = calculateOneFeature(weatherData, "SUN_HOURS_AVG");
+const calculateOneMaxFeature = (weatherData, weatherFeatureName, id) => {
+    return Math.floor(weatherData.reduce(
+        (maxxx, record) => record["ID_PLACE"] === id
+                            ? Math.max(maxxx, record[weatherFeatureName])
+                            : maxxx,
+                            -1000
+                        ) * 100) / 100
+}
 
-    console.log(weather);
+const calculateOneMinFeature = (weatherData, weatherFeatureName, id) => {
+    return Math.floor(weatherData.reduce((minnn, record) => record["ID_PLACE"] === id ? Math.min(minnn, record[weatherFeatureName]) : minnn, 1000) * 100) / 100
+}
+
+const calculateWeather = (weatherData, id) => {
+    const weather = {};
+    weather["Record high"] = calculateOneMaxFeature(weatherData, "TEMP_MAX", id);
+    weather["Average high"] = calculateOneFeature(weatherData, "TEMP_AVG_MAX", id);
+    weather["Daily mean"] = calculateOneFeature(weatherData, "TEMP_AVG", id);
+    weather["Average low"] = calculateOneFeature(weatherData, "TEMP_AVG_MIN", id);
+    weather["Record low"] = calculateOneMinFeature(weatherData, "TEMP_MIN", id);
+    weather["Average precipitation"] = calculateOneFeature(weatherData, "RAIN_AVG", id);
+    weather["Average precipitation days"] = calculateOneFeature(weatherData, "RAIN_DAYS_AVG", id);
+    weather["Mean monthly sunshine hours"] = calculateOneFeature(weatherData, "SUN_HOURS_AVG", id);
+
     return weather;
 }
 
@@ -56,7 +66,7 @@ const ShowOnMapButton = ({newPlaces}) => {
         const xd = newPlaces.map((newPlace) => (newPlace["placeId"]));
         console.log(xd);
         setPlaces(xd);
-        //navigate("/search");
+        navigate("/search");
     }
 
     return <Button
@@ -116,7 +126,6 @@ const Compare = () => {
     const [data, setData] = useState([]);
 
     const getStartingWeather = async () => {
-        console.log("lol");
         const startingWeather = await fetchApi(
             "searchForWeather",
             {
@@ -131,8 +140,25 @@ const Compare = () => {
 
     const fetchStartingWeather = async () => {
         const beginPlaces = await getStartingWeather();
-        console.log(beginPlaces);
-        setData(beginPlaces)
+        let placesIdsNames = beginPlaces.map(
+                beginPlace => ({placeId: beginPlace["ID_PLACE"], placeName: beginPlace["PLACE_NAME"]})
+            );
+        placesIdsNames = placesIdsNames.filter((value, index, self) =>
+            index === self.findIndex((t) => (
+                t.placeId === value.placeId && t.placeName === value.placeName
+            ))
+        )
+        console.log(placesIdsNames);
+        const beginPlacesBetter = placesIdsNames.map(placeIdName => (
+            {
+                placeId: placeIdName["placeId"],
+                placeName: placeIdName["placeName"],
+                weather: calculateWeather(beginPlaces, placeIdName["placeId"])
+            }
+        ))
+        
+        console.log(beginPlacesBetter);
+        setData(beginPlacesBetter)
     }
 
     useEffect(() => {
@@ -178,11 +204,11 @@ const Compare = () => {
         return {
             placeId: newRow[0]["ID_PLACE"],
             placeName: newRow[0]["PLACE_NAME"],
-            weather: calculateWeather(newRow)
+            weather: calculateWeather(newRow, newRow[0]["ID_PLACE"])
         }
     }
 
-    const handleValueChange = async     (event, newValue) => {
+    const handleValueChange = async (event, newValue) => {
         if (!newValue) {
             setValue(newValue);
             return;
@@ -227,7 +253,7 @@ const Compare = () => {
     const getOptions = async () => {
         const prefix = inputValue;
         const newOptions = await fetchApi(
-            "searchAllCitiesLikePrefix",
+            "searchAllLikePrefix",
             {
                 prefix: prefix
             }
