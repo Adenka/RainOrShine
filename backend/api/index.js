@@ -3,7 +3,7 @@ exports.endpointMap = {
     searchAllLikePrefix: require("./searchAllLikePrefix"),
     searchIdPeriod: require("./searchIdPeriod"),
     searchAllCitiesLikePrefix: require("./searchAllCitiesLikePrefix"),
-    searchConstraints: require("./searchConstaints"),
+    searchConstraints: require("./searchConstraints"),
     searchForCoordinates: require("./searchForCoordinates"),
     searchForWeather: require("./searchForWeather")
 }

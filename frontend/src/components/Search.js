@@ -8,9 +8,8 @@ import { weatherFeaturesDefaultValues } from "../assets/weatherFeaturesDefaultVa
 import { weatherFeatures } from "../assets/weatherFeatures";
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import ArrowDropUpIcon from '@mui/icons-material/ArrowDropUp';
-import { exampleData } from "../assets/exampleData";
 import { PlacesContext } from "./PlacesContext";
-import { fetchApi } from "../utils/apiMiddleware";
+import { useFetchApi } from "../utils/apiMiddleware";
 
 delete L.Icon.Default.prototype._getIconUrl;
 
@@ -54,10 +53,11 @@ const ChangeView = ({center, zoom}) => {
 
 const Search = () => {
     const navigate = useNavigate();
-    const { places, setPlaces } = useContext(PlacesContext);
+    const { places, setPlaces, timeSpan, setTimeSpan } = useContext(PlacesContext);
     const [ markers, setMarkers ] = useState([]);
     const [ center, setCenter ] = useState({ lat: 53, lng: 19 })
     const [ zoom, setZoom ] = useState(9);
+    const fetchApi = useFetchApi();
 
     const getStartingCoordinates = async () => {
         const startingCoordinates = await fetchApi(
@@ -95,10 +95,12 @@ const Search = () => {
         fetchStartingCoordinates();
     }, [])
 
+    const [autocompleteValueId, setAutocompleteValueId] = useState(-1);
     const [autocompleteValue, setAutocompleteValue] = useState(null);
     const [distanceValue, setDistanceValue] = useState(50);
     const [inputValue, setInputValue] = useState('');
     const [weatherFeaturesShown, setWeatherFeaturesShown] = useState(false);
+    const [weatherConstraints, setWeatherConstraints] = useState(weatherFeaturesDefaultValues)
 
     const getLocalization = async (id) => {
         console.log(id);
@@ -120,10 +122,12 @@ const Search = () => {
 
     const handleAutocompleteValueChange = async (event, newValue) => {
         if (!newValue) {
+            setAutocompleteValueId(-1);
             setAutocompleteValue(newValue);
             return;
         }
 
+        setAutocompleteValueId(newValue["id"]);
         setAutocompleteValue(newValue["label"]);
         
         const obj = await getLocalization(newValue["id"]);
@@ -143,6 +147,51 @@ const Search = () => {
                 {id: newValue["id"], position: [latitude, longitude]}
             ])
         }
+    }
+
+    const getLocalizations = async () => {
+        let centerMarker = {}
+        if (autocompleteValue) {
+            centerMarker = markers.find(marker => marker["id"] === autocompleteValueId)    
+        }
+        
+        console.log(weatherConstraints)
+
+        const newLocalizations = await fetchApi(
+            "searchConstraints",
+            {
+                left: timeSpan[0], right: timeSpan[1],
+                tempMax:    weatherConstraints["Record high"]["defaultValue"],
+                tempAvgMax:  weatherConstraints["Average high"]["defaultValue"],
+                tempAvg:     weatherConstraints["Daily mean"]["defaultValue"],
+                tempAvgMin:  weatherConstraints["Average low"]["defaultValue"],
+                tempMin:     weatherConstraints["Record low"]["defaultValue"],
+                avgRain:    weatherConstraints["Average precipitation"]["defaultValue"],
+                avgRainDays: weatherConstraints["Average precipitation days"]["defaultValue"],
+                avgSunHours: weatherConstraints["Mean monthly sunshine hours"]["defaultValue"],
+                center: (autocompleteValue) ? centerMarker["position"] : [0, 0],
+                radius: (autocompleteValue) ? 100 : (distanceValue / 100)
+            }
+        )
+        
+        console.log(newLocalizations)
+        return newLocalizations
+    }
+
+    const searchButtonClicked = async () => {
+        const newLocalizations = await getLocalizations();
+        
+        newLocalizations.map(newLocalization =>
+            (markers.some(marker => marker["id"] === newLocalization["ID_PLACE"]))
+            ? setMarkers(prevMarkers => [
+                ...prevMarkers,
+                {
+                    id: newLocalization["ID_PLACE"],
+                    position: [newLocalization["LATITUDE"], newLocalization["LONGITUDE"]]
+                }
+            ])
+            : setMarkers(prevMarkers => prevMarkers)
+        )
     }
 
     const deleteFromMarkers = (marker) => {
@@ -178,6 +227,7 @@ const Search = () => {
         const longitude = obj["longitude"];
 
         setCenter({lat: latitude, lng: longitude});
+        setAutocompleteValueId(obj["placeId"]);
         setAutocompleteValue(obj["placeName"]);
     }
 
@@ -196,6 +246,16 @@ const Search = () => {
         getOptions()
     }, [autocompleteValue, inputValue])
 
+    const handleSliderMoved = (k, v) => {
+        console.log(k, v)
+        setWeatherConstraints(prevWeatherConstraints => ({
+            ...prevWeatherConstraints,
+            [k]: {
+                ...prevWeatherConstraints[k],
+                defaultValue: v,
+            }
+        }))
+    }
 
     return (
         <div style = {{height: "100%", width: "100%", position: "fixed"}}>
@@ -241,33 +301,34 @@ const Search = () => {
                     </div>
                     <Collapse in = {weatherFeaturesShown}>
                         <div style = {{marginTop: 20}}>
-                            {weatherFeaturesDefaultValues.map((obj, key) => (
+                            {Object.entries(weatherConstraints).map(([k, v], key) => (
                                 <div key = {key}>
                                     <Typography>
                                         <FormControlLabel sx = {{height: 35}}
                                             control = {
                                                 <Checkbox
-                                                    checked = {!isDisabled[obj.name]}
-                                                    onChange = {() => handleCheckClicked(obj.name)}
+                                                    checked = {!isDisabled[k]}
+                                                    onChange = {() => handleCheckClicked(k)}
                                                 />
                                             }
                                         />
-                                        {obj.name}
+                                        {k}
                                     </Typography>
                                     <Slider
-                                        defaultValue = {obj.defaultValue}
+                                        defaultValue = {v.defaultValue}
                                         valueLabelDisplay = "auto"
-                                        step = {obj.step}
-                                        min = {obj.min}
-                                        max = {obj.max}
-                                        disabled = {isDisabled[obj.name]}
+                                        step = {v.step}
+                                        min = {v.min}
+                                        max = {v.max}
+                                        disabled = {isDisabled[k]}
+                                        onChangeCommitted = {(_, newValue) => handleSliderMoved(k, newValue)}
                                     />
                                 </div>
                             ))}
                         </div>
                     </Collapse>
                     <div style = {{width: "100%", display: "flex", justifyContent: "right", marginTop: 20}}>
-                        <Button>
+                        <Button onClick = {searchButtonClicked}>
                             Search!
                         </Button>
                     </div>

@@ -8,7 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { weatherFeatures } from "../assets/weatherFeatures";
 import { PlacesContext } from "./PlacesContext";
 import TuneIcon from '@mui/icons-material/Tune';
-import { fetchApi } from "../utils/apiMiddleware"
+import { useFetchApi } from "../utils/apiMiddleware"
 
 const calculateOneFeature = (weatherData, weatherFeatureName, id) => {
     return Math.floor(weatherData.reduce((sum, record) => record["ID_PLACE"] === id ? sum + record[weatherFeatureName] : sum, 0) * 100 / weatherData.length) / 100
@@ -124,6 +124,7 @@ const EnhancedTableHead = (props) => {
 const Compare = () => {
     const {places, timeSpan, setTimeSpan} = useContext(PlacesContext)
     const [data, setData] = useState([]);
+    const fetchApi = useFetchApi();
 
     const getStartingWeather = async () => {
         const startingWeather = await fetchApi(

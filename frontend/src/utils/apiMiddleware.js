@@ -1,3 +1,6 @@
+import { ErrorContext } from "../components/ErrorContext"
+import { useContext } from "react"
+
 const address = 'http://localhost:5000/api'
 
 const throwError = (code, message) => (error) => {
@@ -12,27 +15,41 @@ const throwIf = (func, code, message) => (res) => {
     }
 }
 
-const fetchApi = async (endpoint, args) => {
-    const res = await fetch(address, {
-        method: 'post',
-        headers: {
-            Accept: 'application/json',
-            'Content-Type': 'application/json',
-        },
+const useFetchApi = () => {
+    const { setIsMessageOn, setCurrentMessage, setCurrentSeverity } = useContext(ErrorContext);
 
-        body: JSON.stringify({
-            endpoint,
-            args
-        }),
-    }).catch(throwError(683, 'Network Error'))
-
-    const data = await res.json().catch(throwError(547, 'JSON Error'))
-
-    if (data.error) {
-        throw JSON.stringify(data.error)
+    const setMessage = (message) => {
+        setIsMessageOn(true);
+        setCurrentMessage(message)
+        setCurrentSeverity("error");
     }
 
-    return data
+    const fetchApi = async (endpoint, args) => {
+        const res = await fetch(address, {
+            method: 'post',
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+            },
+    
+            body: JSON.stringify({
+                endpoint,
+                args
+            }),
+        }).catch(
+            setMessage("Network error")
+        )
+    
+        const data = await res.json().catch(throwError(547, 'JSON Error'))
+    
+        if (data.error) {
+            setMessage(data.error.message)
+        }
+    
+        return data
+    }
+    
+    return fetchApi;
 }
 
-export { fetchApi, throwIf, throwError }
+export { useFetchApi, throwIf, throwError }

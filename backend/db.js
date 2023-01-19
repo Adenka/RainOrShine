@@ -1,4 +1,5 @@
 const oracledb = require('oracledb');
+const { throwError } = require('./utils/throwFunctions');
 
 const dbConfig = {
     user          : "jb438249",
@@ -33,7 +34,29 @@ const closePool = async () => {
     }
 }
 
+const query = async (sql, params) => {
+    try {
+        const connection = await oracledb.getConnection()
+        
+        const result = await connection.execute(
+            sql,
+            params,
+            { outFormat: oracledb.OUT_FORMAT_OBJECT }
+        );
+
+        return result.rows
+    }
+    catch(err) {
+        console.error("SQL Error", err);
+        throwError(500, "SQL Error");
+    }
+    finally {
+        await connection.close()
+    }
+}
+
 module.exports = {
     startPool,
-    closePool
+    closePool,
+    query
 }
