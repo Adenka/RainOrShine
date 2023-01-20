@@ -37,14 +37,14 @@ with oracledb.connect(user=user, password=password, dsn=url) as connection:
                 
                 for monthName in months:
                     oks = [False] * 8
-                    oks[2] = (0 < data[monthName]["2"] and data[monthName]["2"] < 10000)
-                    oks[1] = (0 < data[monthName]["1"] and data[monthName]["1"] < 10000)
-                    oks[0] = (0 < data[monthName]["0"] and data[monthName]["0"] < 10000)
-                    oks[3] = (0 < data[monthName]["3"] and data[monthName]["3"] < 10000)
-                    oks[4] = (0 < data[monthName]["4"] and data[monthName]["4"] < 10000)
-                    oks[5] = (0 < data[monthName]["5"] and data[monthName]["5"] < 100000)
+                    oks[2] = (-100 < data[monthName]["2"] and data[monthName]["2"] < 100)
+                    oks[1] = (-100 < data[monthName]["1"] and data[monthName]["1"] < 100)
+                    oks[0] = (-100 < data[monthName]["0"] and data[monthName]["0"] < 100)
+                    oks[3] = (-100 < data[monthName]["3"] and data[monthName]["3"] < 100)
+                    oks[4] = (-100 < data[monthName]["4"] and data[monthName]["4"] < 100)
+                    oks[5] = (0 < data[monthName]["5"] and data[monthName]["5"] < 1000)
                     oks[6] = (0 < data[monthName]["6"] and data[monthName]["6"] < 31)
-                    oks[7] = (data[monthName]["8"] > 0 and data[monthName]["8"] < 24)
+                    oks[7] = (0 < data[monthName]["8"] and data[monthName]["8"] < 24)
                     
                     if oks[6] and oks[7] and oks[0] and oks[1] and oks[2] and oks[3] and oks[4] and oks[5]:
                         data[monthName]["2"] = math.floor(data[monthName]["2"] * 100) / 100
@@ -81,7 +81,8 @@ with oracledb.connect(user=user, password=password, dsn=url) as connection:
                 #    print(cityId)
                 #    print(idsDict[cityId])
         #print(weather)       
-        cursor.executemany("insert into period(id_period, period_name) values (:1, :2)", monthsNumbered)
+
+        #cursor.executemany("insert into period(id_period, period_name) values (:1, :2)", monthsNumbered)
         cursor.executemany(
             "insert into weather(\
                 id_weather, id_place, id_period,\
