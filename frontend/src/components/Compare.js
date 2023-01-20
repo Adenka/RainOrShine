@@ -266,6 +266,8 @@ const Compare = () => {
         getOptions()
     }, [value, inputValue])
 
+    console.log(options);
+
     return (
         <div style = {{width: "100%", height: "100%", position: "fixed"}}>
             <ShowOnMapButton newPlaces={data}/>

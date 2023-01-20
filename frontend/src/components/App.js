@@ -41,7 +41,7 @@ const App = () => {
                             click to query
                         </Button>*/}
                     </PlacesContext.Provider>
-                    <SnackBar/>
+                    {/*<SnackBar/>*/}
                 </>
             </Errors>
         </div>

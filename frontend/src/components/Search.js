@@ -154,21 +154,25 @@ const Search = () => {
         if (autocompleteValue) {
             centerMarker = markers.find(marker => marker["id"] === autocompleteValueId)    
         }
+
+        const whatToShow = (weatherFeature) => {
+            return  !isDisabled[weatherFeature]
+                    ? weatherConstraints[weatherFeature]["defaultValue"] : [-1000, 1000];
+        }
         
         console.log(weatherConstraints)
-
         const newLocalizations = await fetchApi(
             "searchConstraints",
             {
                 left: timeSpan[0], right: timeSpan[1],
-                tempMax:    weatherConstraints["Record high"]["defaultValue"],
-                tempAvgMax:  weatherConstraints["Average high"]["defaultValue"],
-                tempAvg:     weatherConstraints["Daily mean"]["defaultValue"],
-                tempAvgMin:  weatherConstraints["Average low"]["defaultValue"],
-                tempMin:     weatherConstraints["Record low"]["defaultValue"],
-                avgRain:    weatherConstraints["Average precipitation"]["defaultValue"],
-                avgRainDays: weatherConstraints["Average precipitation days"]["defaultValue"],
-                avgSunHours: weatherConstraints["Mean monthly sunshine hours"]["defaultValue"],
+                tempMax:    whatToShow("Record high"),
+                tempAvgMax: whatToShow("Average high"),
+                tempAvg:    whatToShow("Daily mean"),
+                tempAvgMin: whatToShow("Average low"),
+                tempMin:    whatToShow("Record low"),
+                avgRain:    whatToShow("Average precipitation"),
+                avgRainDays: whatToShow("Average precipitation days"),
+                avgSunHours: whatToShow("Mean monthly sunshine hours"),
                 center: (autocompleteValue) ? centerMarker["position"] : [0, 0],
                 radius: (autocompleteValue) ? 100 : (distanceValue / 100)
             }
@@ -180,18 +184,13 @@ const Search = () => {
 
     const searchButtonClicked = async () => {
         const newLocalizations = await getLocalizations();
-        
-        newLocalizations.map(newLocalization =>
-            (markers.some(marker => marker["id"] === newLocalization["ID_PLACE"]))
-            ? setMarkers(prevMarkers => [
-                ...prevMarkers,
-                {
-                    id: newLocalization["ID_PLACE"],
-                    position: [newLocalization["LATITUDE"], newLocalization["LONGITUDE"]]
-                }
-            ])
-            : setMarkers(prevMarkers => prevMarkers)
-        )
+        console.log(newLocalizations);
+        const newMarkers = newLocalizations.map(newLocalization => ({
+            id: newLocalization["ID_PLACE"],
+            position: [newLocalization["LATITUDE"], newLocalization["LONGITUDE"]]
+        }))
+        console.log(newMarkers)
+        setMarkers(newMarkers)
     }
 
     const deleteFromMarkers = (marker) => {

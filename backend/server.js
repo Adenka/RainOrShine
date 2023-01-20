@@ -23,7 +23,7 @@ const startExpress = () => new Promise((resolve, reject) => {
                     (result) => res.status(200).send(result),
                     (error) => {
                         console.error(error)
-                        error.code ||= 500;
+                        error.code = (error.code) ? error.code : 500;
                         res.status(error.code).send({ error })
                     }
                 )

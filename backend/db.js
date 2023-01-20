@@ -35,8 +35,9 @@ const closePool = async () => {
 }
 
 const query = async (sql, params) => {
+    let connection = null;
     try {
-        const connection = await oracledb.getConnection()
+        connection = await oracledb.getConnection()
         
         const result = await connection.execute(
             sql,
@@ -51,7 +52,7 @@ const query = async (sql, params) => {
         throwError(500, "SQL Error");
     }
     finally {
-        await connection.close()
+        (connection) ? await connection.close() : {}
     }
 }
 

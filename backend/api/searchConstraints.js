@@ -6,6 +6,7 @@ module.exports = async ({
     tempMax, tempAvgMax, tempAvg, tempAvgMin, tempMin, avgRain, avgRainDays, avgSunHours,
     center, radius
 }) => {
+    console.log(tempMax, tempAvgMax, tempAvg, tempAvgMin, tempMin, avgRain, avgRainDays, avgSunHours, center, radius)
     return await query(
         `SELECT * FROM (
             SELECT DISTINCT place.id_place, place.place_name, city.latitude, city.longitude
@@ -19,7 +20,7 @@ module.exports = async ({
             AND weather.rain_avg BETWEEN :13 AND :14
             AND weather.rain_days_avg BETWEEN :15 AND :16
             AND sun_hours_avg BETWEEN :17 AND :18
-            AND POWER(city.latitude - :19, 2) + POWER(city.longitude - :20, 2) <= (:21)*(:21)
+            AND POWER(city.latitude - :19, 2) + POWER(city.longitude - :20, 2) <= (:21)*(:21)/10000
             ORDER BY place.place_name
         ) WHERE ROWNUM <= 1000`,
         [
