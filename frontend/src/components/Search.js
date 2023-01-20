@@ -150,17 +150,20 @@ const Search = () => {
     }
 
     const getLocalizations = async () => {
-        let centerMarker = {}
+        let centerMarker = null
         if (autocompleteValue) {
             centerMarker = markers.find(marker => marker["id"] === autocompleteValueId)    
         }
+        console.log(centerMarker);
+        console.log(autocompleteValue);
+        console.log(autocompleteValueId);
 
         const whatToShow = (weatherFeature) => {
             return  !isDisabled[weatherFeature]
                     ? weatherConstraints[weatherFeature]["defaultValue"] : [-1000, 1000];
         }
         
-        console.log(weatherConstraints)
+        console.log(centerMarker)
         const newLocalizations = await fetchApi(
             "searchConstraints",
             {
@@ -173,8 +176,8 @@ const Search = () => {
                 avgRain:    whatToShow("Average precipitation"),
                 avgRainDays: whatToShow("Average precipitation days"),
                 avgSunHours: whatToShow("Mean monthly sunshine hours"),
-                center: (autocompleteValue) ? centerMarker["position"] : [0, 0],
-                radius: (autocompleteValue) ? 100 : (distanceValue / 100)
+                center: ((centerMarker) ? centerMarker["position"] : [0, 0]),
+                radius: ((centerMarker) ? (distanceValue) : 1000000)
             }
         )
         

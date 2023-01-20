@@ -11,7 +11,7 @@ import TuneIcon from '@mui/icons-material/Tune';
 import { useFetchApi } from "../utils/apiMiddleware"
 
 const calculateOneFeature = (weatherData, weatherFeatureName, id) => {
-    return Math.floor(weatherData.reduce((sum, record) => record["ID_PLACE"] === id ? sum + record[weatherFeatureName] : sum, 0) * 100 / weatherData.length) / 100
+    return Math.floor(weatherData.reduce((sum, record) => record["ID_PLACE"] === id ? sum + record[weatherFeatureName] : sum, 0) * 100 / 12) / 100
 }
 
 const calculateOneMaxFeature = (weatherData, weatherFeatureName, id) => {

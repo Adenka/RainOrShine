@@ -36,10 +36,10 @@ export const weatherFeaturesDefaultValues = {
         max: 50
     },
     "Average precipitation": {
-        defaultValue: [0, 5],
-        step: 1,
+        defaultValue: [0, 100],
+        step: 10,
         min: 0,
-        max: 50
+        max: 500
     },
     "Average precipitation days": {
         defaultValue: [0, 5],
