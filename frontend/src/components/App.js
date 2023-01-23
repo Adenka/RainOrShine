@@ -5,7 +5,7 @@ import { Button } from "@mui/material"
 import Gamemode from "./Gamemode"
 import Compare from "./Compare"
 import Search from "./Search"
-import { BrowserRouter, Routes, Route } from "react-router-dom"
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 import { PlacesContext } from "./PlacesContext"
 import { Errors } from "./ErrorContext"
 import SnackBar from "./SnackBar"
@@ -32,7 +32,7 @@ const App = () => {
                     <PlacesContext.Provider value = {{places, setPlaces, timeSpan, setTimeSpan}}>
                         <BrowserRouter>
                             <Routes>
-                                <Route path = "/" element = {<Gamemode/>} />
+                                <Route path = "/" element = {<Navigate to = "/search"/>} />
                                 <Route path = "/compare" element = {<Compare/>} />
                                 <Route path = "/search" element = {<Search/>} />
                             </Routes>
@@ -41,7 +41,7 @@ const App = () => {
                             click to query
                         </Button>*/}
                     </PlacesContext.Provider>
-                    {/*<SnackBar/>*/}
+                    {<SnackBar/>}
                 </>
             </Errors>
         </div>

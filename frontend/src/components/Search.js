@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from "react";
-import { TileLayer, MapContainer, useMap, Marker, Popup } from "react-leaflet"
+import { TileLayer, MapContainer, useMap, Marker, Popup, useMapEvents } from "react-leaflet"
 import "leaflet/dist/leaflet.css"
 import { Paper, Autocomplete, TextField, Button, Collapse, Slider, Typography, IconButton, FormControlLabel, Checkbox } from "@mui/material";
 import { useNavigate } from "react-router";
@@ -10,6 +10,7 @@ import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import ArrowDropUpIcon from '@mui/icons-material/ArrowDropUp';
 import { PlacesContext } from "./PlacesContext";
 import { useFetchApi } from "../utils/apiMiddleware";
+import MapComponent from "./MapComponent";
 
 delete L.Icon.Default.prototype._getIconUrl;
 
@@ -205,6 +206,7 @@ const Search = () => {
     const [options, setOptions] = useState([]);
 
     const [isDisabled, setIsDisabled] = useState({
+        "Time span": false,
         "Record high":  false,
         "Average high": false,
         "Daily mean":   false,
@@ -241,6 +243,7 @@ const Search = () => {
                 prefix: prefix
             }
         )
+        console.log(newOptions)
         setOptions(newOptions)
     }
 
@@ -249,6 +252,11 @@ const Search = () => {
     }, [autocompleteValue, inputValue])
 
     const handleSliderMoved = (k, v) => {
+        if (k === "Time span") {
+            setTimeSpan(v);
+            return;
+        }
+
         console.log(k, v)
         setWeatherConstraints(prevWeatherConstraints => ({
             ...prevWeatherConstraints,
@@ -257,6 +265,56 @@ const Search = () => {
                 defaultValue: v,
             }
         }))
+    }
+
+    const handleLabel = (value, k) => {
+        let modifier = "";
+        if (k === "Record high" || k === "Average high" || k === "Daily mean" ||
+            k === "Average low" || k === "Record low") {
+            modifier = "°C";
+        }
+
+        if (k == "Average precipitation") {
+            modifier = "mm";
+        }
+
+        if (k == "Mean monthly sunshine hours") {
+            modifier = "h";
+        }
+
+        if (k == "Time span") {
+            const months = {
+                1: "January", 2: "February", 3: "March",
+                4: "April", 5: "May", 6: "June",
+                7: "July", 8: "August", 9: "September",
+                10: "October", 11: "November", 12: "December",
+            };
+
+            modifier = months[value];
+
+            return <span>{modifier}</span>
+        }
+
+        return <span>{value} {modifier}</span>
+    }
+
+    const [mainCheckbox, setMainCheckbox] = useState(true);
+
+    const handleMainCheckbox = () => {
+        console.log(mainCheckbox)
+        setIsDisabled({
+            "Time span": mainCheckbox,
+            "Record high":  mainCheckbox,
+            "Average high": mainCheckbox,
+            "Daily mean":   mainCheckbox,
+            "Average low":  mainCheckbox,
+            "Record low":   mainCheckbox,
+            "Average precipitation":        mainCheckbox,
+            "Average precipitation days":   mainCheckbox,
+            "Mean monthly sunshine hours":  mainCheckbox
+        })
+
+        setMainCheckbox(prevMainCheckbox => !prevMainCheckbox)
     }
 
     return (
@@ -269,7 +327,11 @@ const Search = () => {
                     <Autocomplete
                         renderInput={(params) => (<TextField {...params} label = "Add a location"/>)}
                         options = {options.map(
-                            option => ({id: option["ID_PLACE"], label: option["PLACE_NAME"]})
+                            option => ({
+                                id: option["ID_PLACE"],
+                                label: option["PLACE_NAME"],
+                                country: option["COUNTRY_NAME"] || ""
+                            })
                         )}
                         value = {autocompleteValue}
                         onChange = {(event, newValue) => handleAutocompleteValueChange(event, newValue)}
@@ -277,6 +339,12 @@ const Search = () => {
                             setInputValue(newInputValue)
                         }}
                         fullWidth
+                        renderOption={(props, option) => (
+                            <li {...props}>
+                                <strong>{option.label}</strong>
+                                {(option.country) && <span style = {{color: "grey"}}>, {option.country}</span>}
+                            </li>
+                        )}
                     />
                     <Collapse in = {autocompleteValue}>
                         <Slider
@@ -287,12 +355,19 @@ const Search = () => {
                             min = {0}
                             max = {1000}
                             onChangeCommitted = {(_, newValue) => setDistanceValue(newValue)}
+                            valueLabelFormat = {value => <span>{value} km</span>}
                         />
                     </Collapse>
                 </Paper>
                 <Paper style = {{marginTop: 20, padding: 25}}>
                     <div style = {{display: "flex"}}>
-                        <Typography variant = "h6" style = {{flexGrow: 1}}>Weather features</Typography>
+                        <Typography variant = "h6" style = {{flexGrow: 1, marginLeft: -12}}>
+                            <Checkbox
+                                checked = {mainCheckbox}
+                                onClick = {handleMainCheckbox}
+                            />
+                            Weather features
+                        </Typography>
                         <IconButton
                             sx = {{height: 32, width: 32, marginRight: "6px"}}
                             onClick = {() =>
@@ -317,13 +392,14 @@ const Search = () => {
                                         {k}
                                     </Typography>
                                     <Slider
-                                        defaultValue = {v.defaultValue}
+                                        defaultValue = {(k === "Time span") ? [timeSpan[0] + 1, timeSpan[1] + 1] : v.defaultValue}
                                         valueLabelDisplay = "auto"
                                         step = {v.step}
                                         min = {v.min}
                                         max = {v.max}
                                         disabled = {isDisabled[k]}
                                         onChangeCommitted = {(_, newValue) => handleSliderMoved(k, newValue)}
+                                        valueLabelFormat = {value => <span>{handleLabel(value, k)}</span>}
                                     />
                                 </div>
                             ))}
@@ -341,6 +417,7 @@ const Search = () => {
                 center = {center}
                 zoom = {zoom}
             >
+                <MapComponent setZoom = {setZoom} setCenter = {setCenter}/>
                 <ChangeView center = {center} zoom = {zoom}/>
                 <TileLayer
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

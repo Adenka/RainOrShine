@@ -17,5 +17,21 @@ module.exports = async ({ ids }) => {
     }
     sql += `)`;
 
-    return await query(sql, ids);
+    const cities = await query(sql, ids);
+
+    sql = `
+        SELECT place.id_place, place.place_name, region.latitude AS longitude, region.longitude AS latitude
+        FROM place JOIN region ON place.id_place = region.id_place
+        WHERE region.id_place
+        IN (
+    `;
+
+    for (let i = 0; i < ids.length; ++i) {
+        sql += (i > 0) ? `, :` + i : `:` + i;
+    }
+    sql += `)`;
+
+    const regions = await query(sql, ids);
+
+    return [...cities, ...regions];
 }

@@ -275,7 +275,11 @@ const Compare = () => {
                 <Autocomplete
                     renderInput = {(params) => (<TextField {...params} label = "Add a location"/>)}
                     options = {options.map(
-                        option => ({id: option["ID_PLACE"], label: option["PLACE_NAME"]})
+                        option => ({
+                            id: option["ID_PLACE"],
+                            label: option["PLACE_NAME"],
+                            country: option["COUNTRY_NAME"]
+                        })
                     )}
                     value = {value}
                     onChange = {(event, newValue) => handleValueChange(event, newValue)}
@@ -283,6 +287,12 @@ const Compare = () => {
                         setInputValue(newInputValue)
                     }}
                     fullWidth
+                    renderOption={(props, option) => (
+                        <li {...props}>
+                            <strong>{option.label}</strong>
+                            {(option.country) && <span style = {{color: "grey"}}>, {option.country}</span>}
+                        </li>
+                    )}
                 />
                 <IconButton
                     style ={{ marginLeft: 40, width: 60, height: 60 }}

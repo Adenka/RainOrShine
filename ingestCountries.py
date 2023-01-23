@@ -8,7 +8,7 @@ url = "LABS"
 
 with oracledb.connect(user=user, password=password, dsn=url) as connection:
     with connection.cursor() as cursor:
-        f = open('cities_data.json', newline='')
+        f = open('countries_data.json', newline='')
         citiesObject = ijson.items(f, 'item')
 
         countries = set()

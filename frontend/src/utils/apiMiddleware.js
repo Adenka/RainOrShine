@@ -36,7 +36,7 @@ const useFetchApi = () => {
                 endpoint,
                 args
             }),
-        }).catch(
+        }).catch(()=>
             setMessage("Network error")
         )
     
