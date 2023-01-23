@@ -64,7 +64,6 @@ const ShowOnMapButton = ({newPlaces}) => {
 
     const handleOnClick = () => {
         const xd = newPlaces.map((newPlace) => (newPlace["placeId"]));
-        console.log(xd);
         setPlaces(xd);
         navigate("/search");
     }
@@ -135,7 +134,7 @@ const Compare = () => {
                 right: timeSpan[1]
             }
         )
-        console.log(startingWeather)
+
         return startingWeather
     }
 
@@ -149,7 +148,7 @@ const Compare = () => {
                 t.placeId === value.placeId && t.placeName === value.placeName
             ))
         )
-        console.log(placesIdsNames);
+
         const beginPlacesBetter = placesIdsNames.map(placeIdName => (
             {
                 placeId: placeIdName["placeId"],
@@ -158,13 +157,10 @@ const Compare = () => {
             }
         ))
         
-        console.log(beginPlacesBetter);
         setData(beginPlacesBetter)
     }
 
     useEffect(() => {
-        console.log(places)
-        
         fetchStartingWeather()
     }, [])
 
@@ -191,7 +187,6 @@ const Compare = () => {
     }
 
     const getRow = async (id, left, right) => {
-        console.log(id, left, right);
         const newRow = await fetchApi(
             "searchIdPeriod",
             {
@@ -201,7 +196,6 @@ const Compare = () => {
             }
         )
         
-        console.log(newRow)
         return {
             placeId: newRow[0]["ID_PLACE"],
             placeName: newRow[0]["PLACE_NAME"],
@@ -215,15 +209,12 @@ const Compare = () => {
             return;
         }
         
-        console.log(newValue);
         setValue(newValue["label"]);
         
         const isThere = data.some(elem => elem.placeId === newValue["id"]);
         
         if (!isThere) {
-            console.log(newValue["id"])
             const actualData = await getRow(newValue["id"], timeSpan[0], timeSpan[1])
-            console.log(actualData)
             setData(prevData => [
                 ...prevData,
                 {

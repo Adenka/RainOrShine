@@ -1,11 +1,10 @@
 import React, { useContext, useEffect, useState } from "react";
-import { TileLayer, MapContainer, useMap, Marker, Popup, useMapEvents } from "react-leaflet"
+import { TileLayer, MapContainer, useMap, Marker, Popup } from "react-leaflet"
 import "leaflet/dist/leaflet.css"
 import { Paper, Autocomplete, TextField, Button, Collapse, Slider, Typography, IconButton, FormControlLabel, Checkbox } from "@mui/material";
 import { useNavigate } from "react-router";
 import L from 'leaflet';
 import { weatherFeaturesDefaultValues } from "../assets/weatherFeaturesDefaultValues"
-import { weatherFeatures } from "../assets/weatherFeatures";
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import ArrowDropUpIcon from '@mui/icons-material/ArrowDropUp';
 import { PlacesContext } from "./PlacesContext";
@@ -67,14 +66,12 @@ const Search = () => {
                 ids: places
             }
         )
-        console.log(startingCoordinates)
+        
         return startingCoordinates
     }
 
     const fetchStartingCoordinates = async () => {
         const startingCoordinates = await getStartingCoordinates();
-
-        console.log(startingCoordinates)
 
         setMarkers(startingCoordinates.map(place => ({
             id: place["ID_PLACE"],
@@ -104,7 +101,6 @@ const Search = () => {
     const [weatherConstraints, setWeatherConstraints] = useState(weatherFeaturesDefaultValues)
 
     const getLocalization = async (id) => {
-        console.log(id);
         const newRow = await fetchApi(
             "searchForCoordinates",
             {
@@ -112,7 +108,6 @@ const Search = () => {
             }
         )
         
-        console.log(newRow)
         return {
             placeId: newRow[0]["ID_PLACE"],
             placeName: newRow[0]["PLACE_NAME"],
@@ -132,11 +127,8 @@ const Search = () => {
         setAutocompleteValue(newValue["label"]);
         
         const obj = await getLocalization(newValue["id"]);
-        console.log(obj);
         const latitude = obj["latitude"];
         const longitude = obj["longitude"];
-        
-        console.log(newValue, latitude, longitude)
 
         const isThere = markers.some(marker => marker["id"] === newValue["id"])
 
@@ -155,9 +147,6 @@ const Search = () => {
         if (autocompleteValue) {
             centerMarker = markers.find(marker => marker["id"] === autocompleteValueId)    
         }
-        console.log(centerMarker);
-        console.log(autocompleteValue);
-        console.log(autocompleteValueId);
 
         const whatToShow = (weatherFeature) => {
             return  !isDisabled[weatherFeature]
@@ -188,7 +177,6 @@ const Search = () => {
 
     const searchButtonClicked = async () => {
         const newLocalizations = await getLocalizations();
-        console.log(newLocalizations);
         const newMarkers = newLocalizations.map(newLocalization => ({
             id: newLocalization["ID_PLACE"],
             position: [newLocalization["LATITUDE"], newLocalization["LONGITUDE"]]
@@ -198,7 +186,6 @@ const Search = () => {
     }
 
     const deleteFromMarkers = (marker) => {
-        console.log(marker)
         setMarkers(prevMarkers =>
             prevMarkers.filter((m, _) => m["id"] !== marker["id"]))
     }
@@ -243,7 +230,7 @@ const Search = () => {
                 prefix: prefix
             }
         )
-        console.log(newOptions)
+        
         setOptions(newOptions)
     }
 
@@ -274,15 +261,15 @@ const Search = () => {
             modifier = "°C";
         }
 
-        if (k == "Average precipitation") {
+        if (k === "Average precipitation") {
             modifier = "mm";
         }
 
-        if (k == "Mean monthly sunshine hours") {
+        if (k === "Mean monthly sunshine hours") {
             modifier = "h";
         }
 
-        if (k == "Time span") {
+        if (k === "Time span") {
             const months = {
                 1: "January", 2: "February", 3: "March",
                 4: "April", 5: "May", 6: "June",
@@ -301,7 +288,6 @@ const Search = () => {
     const [mainCheckbox, setMainCheckbox] = useState(true);
 
     const handleMainCheckbox = () => {
-        console.log(mainCheckbox)
         setIsDisabled({
             "Time span": mainCheckbox,
             "Record high":  mainCheckbox,
